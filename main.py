@@ -8,6 +8,19 @@ import sys
 
 
 
+class DatabaseConnection:
+    def __init__(self, host='localhost', user='root', password='pythoncourse', database='mydatabase'):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+
+    def connect(self):
+        connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
+        return connection
+
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -37,6 +50,16 @@ class MainWindow(QMainWindow):
         dialog = SurveyDialog()
         dialog.exec()
 
+    def load_data(self):
+        connection = DatabaseConnection().connect()
+        cursor = connection.cursor()
+        result = cursor.execute("SELECT * FROM survey")
+        self.table.setRowCount(0)
+        for row_number, row_data in enumerate(result):
+            self.table.insertRow(row_number)
+            for column_number, data in enumerate(row_data):
+                self.table.setItem(row_number, column_number, QTableWidgetItem(str(data)))
+        connection.close()
 
 
 class SurveyDialog(QDialog):
@@ -84,7 +107,17 @@ class SurveyDialog(QDialog):
 
 
     def submit(self):
-        pass
+        name = self.name.text()
+        age = self.age.text()
+        gender = self.gender.text()
+        city = self.city.text()
+        connection = DatabaseConnection().connect()
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO people (name, age, gender, city) VALUES (%s, %s, %s, %s)",
+                       (name, age, gender, city))
+        connection.commit()
+        cursor.close()
+        connection.close()
 
     def cancel(self):
         self.close()
