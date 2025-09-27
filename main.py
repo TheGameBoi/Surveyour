@@ -1,7 +1,7 @@
 import mysql.connector
 from PyQt6.QtWidgets import (QComboBox, QMessageBox, QPushButton, QLabel, QLineEdit, QGridLayout, QApplication,
-        QMainWindow, QGridLayout, QWidget, QTableWidget, QToolBar, QTextEdit, QStatusBar,
-        QTableWidgetItem, QDialog)
+     QMainWindow, QGridLayout, QWidget, QTableWidget, QToolBar, QTextEdit, QStatusBar,
+     QTableWidgetItem, QDialog, QPlainTextEdit, QVBoxLayout)
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt
 import sys
@@ -9,7 +9,7 @@ import sys
 
 
 class DatabaseConnection:
-    def __init__(self, host='localhost', user='root', password='pythoncourse', database='mydatabase'):
+    def __init__(self, host='localhost', user='root', password='pythoncourse', database='survey'):
         self.host = host
         self.user = user
         self.password = password
@@ -29,15 +29,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Surveyor")
         self.setMinimumSize(600, 400)
 
-
         # Table Layout
         self.table = QTableWidget(self)
-        self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(("Name", "Age", "Gender", "City"))
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(("ID", "Name", "Age", "Gender", "City"))
         self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
 
-        new_survey = QAction("New Survey", self)
+        new_survey = QAction("Add Person", self)
         new_survey.triggered.connect(self.survey)
 
         # Toolbar
@@ -46,20 +45,125 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
         toolbar.addAction(new_survey)
 
+        # Status Bar and Elements
+        self.status = QStatusBar(self)
+        self.setStatusBar(self.status)
+
+        # Check if Cell is Clicked
+        self.table.cellClicked.connect(self.cell_clicked)
+
+
+    def cell_clicked(self):
+        # Edit Button
+        edit = QPushButton("Edit Person")
+        edit.clicked.connect(self.edit)
+
+        # Delete Button
+        delete = QPushButton("Delete Person")
+        delete.clicked.connect(self.delete)
+
+        children = self.findChildren(QPushButton)
+        if children:
+            for child in children:
+                self.status.removeWidget(child)
+
+        self.status.addWidget(edit)
+        self.status.addWidget(delete)
+
     def survey(self):
         dialog = SurveyDialog()
         dialog.exec()
 
+    def edit(self):
+        dialog = EditDialog()
+        dialog.exec()
+
+    def delete(self):
+        pass
+
     def load_data(self):
         connection = DatabaseConnection().connect()
         cursor = connection.cursor()
-        result = cursor.execute("SELECT * FROM survey")
+        cursor.execute("SELECT id, name, age, gender, city FROM people")
+        result = cursor.fetchall()
         self.table.setRowCount(0)
         for row_number, row_data in enumerate(result):
             self.table.insertRow(row_number)
             for column_number, data in enumerate(row_data):
                 self.table.setItem(row_number, column_number, QTableWidgetItem(str(data)))
         connection.close()
+
+
+class EditDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Edit Survey Data")
+        self.setMinimumSize(100, 100)
+
+        # Grid layout
+        layout = QGridLayout()
+
+        # Item Index
+        index = window.table.currentRow()
+
+        # Survey ID
+        self.id = window.table.item(index, 0).text()
+
+        # Get Name
+        name = window.table.item(index, 1).text()
+
+        # Name
+        self.name = QLineEdit(name)
+        self.name.setPlaceholderText("Name")
+
+        # Get Age
+        age = window.table.item(index, 2).text()
+
+        # Age
+        self.age = QLineEdit(age)
+        self.age.setPlaceholderText("Age")
+
+        # Get Gender
+        gender = window.table.item(index, 3).text()
+
+        # Gender
+        self.gender = QLineEdit(gender)
+        self.gender.setPlaceholderText("Gender")
+
+        # Get City
+        city = window.table.item(index, 4).text()
+
+        # City
+        self.city = QLineEdit(city)
+        self.city.setPlaceholderText("City")
+
+        # Submit Button
+        add = QPushButton("Update")
+        add.clicked.connect(self.update)
+
+        # Cancel Button
+        cancel = QPushButton("Cancel")
+        cancel.clicked.connect(self.close)
+
+        # Setting Layout
+        layout.addWidget(self.name, 0, 0, 1, 1)
+        layout.addWidget(self.age, 0, 3)
+        layout.addWidget(self.gender, 0, 2)
+        layout.addWidget(self.city, 0, 1)
+        layout.addWidget(add, 2, 1)
+        layout.addWidget(cancel, 2, 2)
+        self.setLayout(layout)
+
+    def update(self):
+        connection = DatabaseConnection().connect()
+        cursor = connection.cursor()
+        cursor.execute("UPDATE people SET name = %s, age = %s, gender = %s, city = %s WHERE id = %s",
+                       (self.name.text(), self.age.text(), self.gender.text(), self.city.text(), self.id))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        window.load_data()
+        self.accept()
 
 
 class SurveyDialog(QDialog):
@@ -105,7 +209,6 @@ class SurveyDialog(QDialog):
         layout.addWidget(cancel, 2, 2)
         self.setLayout(layout)
 
-
     def submit(self):
         name = self.name.text()
         age = self.age.text()
@@ -114,15 +217,19 @@ class SurveyDialog(QDialog):
         connection = DatabaseConnection().connect()
         cursor = connection.cursor()
         cursor.execute("INSERT INTO people (name, age, gender, city) VALUES (%s, %s, %s, %s)",
-                       (name, age, gender, city))
+                     (name, age, gender, city))
         connection.commit()
         cursor.close()
         connection.close()
+        window.load_data()
+        self.accept()
 
     def cancel(self):
-        self.close()
+        self.reject()
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
 window.show()
+window.load_data()
 sys.exit(app.exec())
