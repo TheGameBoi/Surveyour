@@ -1,9 +1,9 @@
+import mysql.connector
 from PyQt6.QtWidgets import (QComboBox, QMessageBox, QPushButton, QLabel, QLineEdit, QGridLayout, QApplication,
         QMainWindow, QGridLayout, QWidget, QTableWidget, QToolBar, QTextEdit, QStatusBar,
         QTableWidgetItem, QDialog)
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt
-import mysql.connector
 import sys
 
 
@@ -24,10 +24,8 @@ class MainWindow(QMainWindow):
         self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
 
-
         new_survey = QAction("New Survey", self)
-
-
+        new_survey.triggered.connect(self.survey)
 
         # Toolbar
         toolbar = QToolBar(self)
@@ -35,6 +33,9 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
         toolbar.addAction(new_survey)
 
+    def survey(self):
+        dialog = SurveyDialog()
+        dialog.exec()
 
 
 
@@ -42,7 +43,7 @@ class SurveyDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Add Data")
-        self.setFixedSize(600, 400)
+        self.setFixedSize(400, 100)
 
         # Grid layout
         layout = QGridLayout()
@@ -68,6 +69,11 @@ class SurveyDialog(QDialog):
 
 
         # Setting Layout
+        layout.addWidget(self.name, 0, 0, 1, 1)
+        layout.addWidget(self.age, 0, 1)
+        layout.addWidget(self.gender, 0, 2)
+        layout.addWidget(self.city, 0, 1)
+        layout.addWidget(add, 1, 1)
         self.setLayout(layout)
 
 
