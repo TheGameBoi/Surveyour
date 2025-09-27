@@ -43,7 +43,7 @@ class SurveyDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Add Data")
-        self.setFixedSize(400, 100)
+        self.setFixedSize(500, 100)
 
         # Grid layout
         layout = QGridLayout()
@@ -66,16 +66,28 @@ class SurveyDialog(QDialog):
 
         # Submit Button
         add = QPushButton("Submit")
+        add.clicked.connect(self.submit)
+
+        # Cancel Button
+        cancel = QPushButton("Cancel")
+        cancel.clicked.connect(self.close)
 
 
         # Setting Layout
         layout.addWidget(self.name, 0, 0, 1, 1)
-        layout.addWidget(self.age, 0, 1)
+        layout.addWidget(self.age, 0, 3)
         layout.addWidget(self.gender, 0, 2)
         layout.addWidget(self.city, 0, 1)
-        layout.addWidget(add, 1, 1)
+        layout.addWidget(add, 2, 1)
+        layout.addWidget(cancel, 2, 2)
         self.setLayout(layout)
 
+
+    def submit(self):
+        pass
+
+    def cancel(self):
+        self.close()
 
 app = QApplication(sys.argv)
 window = MainWindow()
