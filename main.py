@@ -30,9 +30,10 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(600, 400)
 
         # Table Layout
+        columns = "ID", "Name", "Age", "Gender", "City"
         self.table = QTableWidget(self)
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(("ID", "Name", "Age", "Gender", "City"))
+        self.table.setColumnCount(len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
         self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
 
@@ -79,7 +80,8 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def delete(self):
-        pass
+        dialog = DeleteDialog()
+        dialog.exec()
 
     def load_data(self):
         connection = DatabaseConnection().connect()
@@ -93,6 +95,49 @@ class MainWindow(QMainWindow):
                 self.table.setItem(row_number, column_number, QTableWidgetItem(str(data)))
         connection.close()
 
+
+
+class DeleteDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Delete Person")
+        self.setMinimumSize(400, 100)
+
+        # Layout Grid
+        layout = QGridLayout()
+
+        # Widgets
+        content = QLabel("Are you sure you want to delete?")
+
+        yes = QPushButton("Yes")
+        yes.clicked.connect(self.delete)
+
+
+        no = QPushButton("Cancel")
+        no.clicked.connect(self.reject)
+
+        layout.addWidget(content, 0, 0)
+        layout.addWidget(yes)
+        layout.addWidget(no, 1, 1)
+        self.setLayout(layout)
+
+    def delete(self):
+        index = window.table.currentRow()
+        user_id = window.table.item(index, 0).text()
+        connection = DatabaseConnection().connect()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM people WHERE id = %s", (user_id,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        window.load_data()
+
+        self.reject()
+
+        confirm = QMessageBox()
+        confirm.setWindowTitle("Success")
+        confirm.setText("Person Deleted!")
+        confirm.exec()
 
 class EditDialog(QDialog):
     def __init__(self):
